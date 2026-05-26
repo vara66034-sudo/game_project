@@ -6,6 +6,7 @@ from settings import (
     GAME_HEIGHT,
     UI_HEIGHT,
     FPS,
+    DEBUG_UI,
     COLOR_BACKGROUND,
     COLOR_TEXT_BOX,
     COLOR_TEXT,
@@ -27,6 +28,7 @@ class Game:
 
         self.clock = pygame.time.Clock()
         self.running = True
+        self.show_debug = DEBUG_UI
 
         self.current_level_name = "room"
         self.level = Level(self.current_level_name)
@@ -80,6 +82,9 @@ class Game:
     def _handle_key_down(self, event):
         if event.key == pygame.K_ESCAPE:
             self.running = False
+
+        if event.key == pygame.K_F3:
+            self.show_debug = not self.show_debug
 
         if event.key in (pygame.K_SPACE, pygame.K_RETURN):
             self._interact()
@@ -150,6 +155,10 @@ class Game:
             self._start_metro_sleep_dialogue()
             return
 
+        if near_object.name == "conductor":
+            self._start_conductor_dialogue()
+            return
+
         self.current_message = near_object.message
 
     def _change_level(self, level_name):
@@ -165,6 +174,11 @@ class Game:
             self.player.rect.x = 460
             self.player.rect.y = 430
             self.current_message = "Метро. Вагон почти пустой. Найди место, чтобы сесть."
+
+        elif level_name == "other_station":
+            self.player.rect.x = 460
+            self.player.rect.y = 360
+            self.current_message = "Станция без названия. Здесь слишком тихо."
 
         self._stop_movement()
 
@@ -224,12 +238,40 @@ class Game:
                     "text": "Продолжить.",
                     "connection": 0,
                     "result": "Поезд проезжает конечную станцию. Двери не открываются.",
+                    "action": "go_other_station",
                 }
             ],
         )
 
+    def _start_conductor_dialogue(self):
+        self.dialogue.start(
+            title="Проводник",
+            lines=[
+                "— Ты проехала дальше конечной.",
+                "— Обычно сюда не попадают случайно.",
+                "— Но если станция открылась, значит, тебе нужно что-то здесь увидеть.",
+            ],
+            options=[
+                {
+                    "text": "Где я?",
+                    "connection": 0,
+                    "result": "Проводник смотрит на табло: «Там, где остановка появляется только для тех, кто потерял дорогу».",
+                },
+                {
+                    "text": "Я хочу домой.",
+                    "connection": 0,
+                    "result": "Проводник отвечает: «Домой можно вернуться. Но не раньше, чем ты поймёшь, зачем приехала».",
+                },
+                {
+                    "text": "Почему вы со мной разговариваете?",
+                    "connection": 1,
+                    "result": "Проводник тихо говорит: «Потому что ты привыкла думать, что тебя никто не слышит».",
+                },
+            ],
+        )
+
     def _apply_dialogue_option(self, option):
-        if option["connection"] > 0:
+        if option.get("connection", 0) > 0:
             self.progress.add_connection_point()
 
         if self.current_level_name == "room":
@@ -238,14 +280,21 @@ class Game:
         self.current_message = option["result"]
         self.dialogue.close()
 
+        action = option.get("action")
+
+        if action == "go_other_station":
+            self._change_level("other_station")
+
     def _draw(self):
         self.screen.fill(COLOR_BACKGROUND)
 
         self.level.draw(self.screen)
         self.player.draw(self.screen)
 
-        self._draw_ui()
-        self.dialogue.draw(self.screen)
+        if self.dialogue.active:
+            self.dialogue.draw(self.screen)
+        else:
+            self._draw_ui()
 
         pygame.display.flip()
 
@@ -254,19 +303,47 @@ class Game:
 
         pygame.draw.rect(self.screen, COLOR_TEXT_BOX, box_rect)
 
-        message_surface = self.font.render(self.current_message, True, COLOR_TEXT)
-        self.screen.blit(message_surface, (30, GAME_HEIGHT + 25))
-
-        hint_surface = self.small_font.render(
-            "WASD / стрелки — движение     E / пробел — взаимодействие     Esc — выход",
-            True,
-            COLOR_HINT,
+        self._draw_wrapped_text(
+            text=self.current_message,
+            font=self.font,
+            color=COLOR_TEXT,
+            x=30,
+            y=GAME_HEIGHT + 24,
+            max_width=SCREEN_WIDTH - 60,
+            line_height=28,
+            max_lines=2,
         )
-        self.screen.blit(hint_surface, (30, GAME_HEIGHT + 75))
 
-        points_surface = self.small_font.render(
-            f"connection_points: {self.progress.connection_points}",
-            True,
-            COLOR_HINT,
-        )
-        self.screen.blit(points_surface, (SCREEN_WIDTH - 220, GAME_HEIGHT + 75))
+        if self.show_debug:
+            debug_text = (
+                f"DEBUG: level={self.current_level_name} | "
+                f"connection_points={self.progress.connection_points} | "
+                f"F3 hide debug"
+            )
+
+            debug_surface = self.small_font.render(debug_text, True, COLOR_HINT)
+            self.screen.blit(debug_surface, (30, GAME_HEIGHT + 78))
+
+    def _draw_wrapped_text(self, text, font, color, x, y, max_width, line_height, max_lines=None):
+        words = text.split(" ")
+        lines = []
+        current_line = ""
+
+        for word in words:
+            test_line = current_line + word + " "
+
+            if font.size(test_line)[0] <= max_width:
+                current_line = test_line
+            else:
+                lines.append(current_line.strip())
+                current_line = word + " "
+
+        if current_line:
+            lines.append(current_line.strip())
+
+        if max_lines is not None:
+            lines = lines[:max_lines]
+
+        for index, line in enumerate(lines):
+            line_surface = font.render(line, True, color)
+            self.screen.blit(line_surface, (x, y + index * line_height))

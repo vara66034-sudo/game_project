@@ -66,28 +66,31 @@ class Dialogue:
         if not self.active:
             return
 
-        box_rect = pygame.Rect(80, 90, SCREEN_WIDTH - 160, SCREEN_HEIGHT - 180)
+        panel_height = 360
+        panel_y = SCREEN_HEIGHT - panel_height
+
+        box_rect = pygame.Rect(0, panel_y, SCREEN_WIDTH, panel_height)
 
         pygame.draw.rect(screen, COLOR_DIALOGUE_BOX, box_rect)
         pygame.draw.rect(screen, COLOR_DIALOGUE_BORDER, box_rect, 3)
 
         title_surface = self.font.render(self.title, True, COLOR_TEXT)
-        screen.blit(title_surface, (box_rect.x + 30, box_rect.y + 25))
+        screen.blit(title_surface, (30, panel_y + 22))
 
-        y = box_rect.y + 70
+        y = panel_y + 68
 
         for line in self.lines:
-            wrapped_lines = self._wrap_text(line, self.font, box_rect.width - 60)
+            wrapped_lines = self._wrap_text(line, self.font, SCREEN_WIDTH - 60)
 
             for wrapped_line in wrapped_lines:
                 line_surface = self.font.render(wrapped_line, True, COLOR_TEXT)
-                screen.blit(line_surface, (box_rect.x + 30, y))
+                screen.blit(line_surface, (30, y))
                 y += 30
 
         y += 20
 
         for index, option in enumerate(self.options):
-            option_rect = pygame.Rect(box_rect.x + 30, y, box_rect.width - 60, 38)
+            option_rect = pygame.Rect(30, y, SCREEN_WIDTH - 60, 42)
 
             if index == self.selected_index:
                 pygame.draw.rect(screen, COLOR_OPTION_SELECTED, option_rect)
@@ -96,17 +99,10 @@ class Dialogue:
 
             option_text = f"{index + 1}. {option['text']}"
             option_surface = self.small_font.render(option_text, True, COLOR_TEXT)
-            screen.blit(option_surface, (option_rect.x + 14, option_rect.y + 9))
+            screen.blit(option_surface, (option_rect.x + 14, option_rect.y + 11))
 
-            y += 46
-
-        hint_surface = self.small_font.render(
-            "1–4 — выбрать ответ     ↑ ↓ — выбор     Enter — подтвердить",
-            True,
-            COLOR_HINT,
-        )
-        screen.blit(hint_surface, (box_rect.x + 30, box_rect.bottom - 35))
-
+            y += 52
+                    
     def _wrap_text(self, text, font, max_width):
         words = text.split(" ")
         lines = []

@@ -18,6 +18,13 @@ from settings import (
     COLOR_METRO_DOOR,
     COLOR_METRO_SCREEN,
     COLOR_METRO_RAIL,
+    COLOR_OTHER_FLOOR,
+    COLOR_OTHER_WALL,
+    COLOR_OTHER_PLATFORM,
+    COLOR_OTHER_DOOR,
+    COLOR_OTHER_SIGN,
+    COLOR_CONDUCTOR,
+    COLOR_STRANGE_LIGHT,
 )
 
 
@@ -50,9 +57,10 @@ class Level:
 
         if level_name == "room":
             self._create_room()
-
         elif level_name == "metro":
             self._create_metro()
+        elif level_name == "other_station":
+            self._create_other_station()
 
     def _create_base_walls(self, wall_color):
         thickness = TILE_SIZE
@@ -164,7 +172,6 @@ class Level:
             rect=(45, 220, 70, 140),
             color=COLOR_METRO_DOOR,
             message="Двери закрыты. За ними только тёмный тоннель.",
-            blocks_movement=True,
         )
 
         right_train_door = InteractableObject(
@@ -172,7 +179,6 @@ class Level:
             rect=(845, 220, 70, 140),
             color=COLOR_METRO_DOOR,
             message="Двери не открываются, хотя поезд уже должен был остановиться.",
-            blocks_movement=True,
         )
 
         left_seat = InteractableObject(
@@ -180,7 +186,6 @@ class Level:
             rect=(140, 390, 260, 70),
             color=COLOR_METRO_SEAT,
             message="Сиденье. Вагон почти пустой. Глаза начинают закрываться.",
-            blocks_movement=True,
         )
 
         right_seat = InteractableObject(
@@ -188,7 +193,6 @@ class Level:
             rect=(560, 390, 260, 70),
             color=COLOR_METRO_SEAT,
             message="Сиденье. Здесь тихо, будто поезд едет не по обычному маршруту.",
-            blocks_movement=True,
         )
 
         left_rail = InteractableObject(
@@ -196,7 +200,6 @@ class Level:
             rect=(430, 250, 14, 110),
             color=COLOR_METRO_RAIL,
             message="Поручень холодный на ощупь.",
-            blocks_movement=True,
         )
 
         right_rail = InteractableObject(
@@ -204,7 +207,6 @@ class Level:
             rect=(515, 250, 14, 110),
             color=COLOR_METRO_RAIL,
             message="Поручень холодный на ощупь.",
-            blocks_movement=True,
         )
 
         self.objects = [
@@ -218,6 +220,67 @@ class Level:
             right_seat,
             left_rail,
             right_rail,
+        ]
+
+    def _create_other_station(self):
+        self.floor_color = COLOR_OTHER_FLOOR
+        self._create_base_walls(COLOR_OTHER_WALL)
+
+        platform = InteractableObject(
+            name="platform",
+            rect=(90, 330, 780, 90),
+            color=COLOR_OTHER_PLATFORM,
+            message="Платформа похожа на обычную станцию, но линии на полу слегка двигаются.",
+            blocks_movement=False,
+        )
+
+        sign = InteractableObject(
+            name="station_sign",
+            rect=(320, 80, 320, 55),
+            color=COLOR_OTHER_SIGN,
+            message="Табличка станции. Буквы складываются в слова: «Станция без названия».",
+            blocks_movement=False,
+        )
+
+        strange_light_left = InteractableObject(
+            name="strange_light",
+            rect=(130, 120, 70, 70),
+            color=COLOR_STRANGE_LIGHT,
+            message="Светильник тихо гудит, будто пытается что-то сказать.",
+            blocks_movement=True,
+        )
+
+        strange_light_right = InteractableObject(
+            name="strange_light",
+            rect=(760, 120, 70, 70),
+            color=COLOR_STRANGE_LIGHT,
+            message="Свет дрожит, хотя воздуха здесь почти нет.",
+            blocks_movement=True,
+        )
+
+        closed_gate = InteractableObject(
+            name="closed_gate",
+            rect=(410, 430, 140, 60),
+            color=COLOR_OTHER_DOOR,
+            message="Проход закрыт. Кажется, кто-то должен разрешить идти дальше.",
+            blocks_movement=True,
+        )
+
+        conductor = InteractableObject(
+            name="conductor",
+            rect=(460, 230, 42, 58),
+            color=COLOR_CONDUCTOR,
+            message="Проводник молча смотрит на героиню.",
+            blocks_movement=True,
+        )
+
+        self.objects = [
+            platform,
+            sign,
+            strange_light_left,
+            strange_light_right,
+            closed_gate,
+            conductor,
         ]
 
     def get_collision_rects(self):
