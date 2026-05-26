@@ -28,7 +28,9 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
 
-        self.level = Level()
+        self.current_level_name = "room"
+        self.level = Level(self.current_level_name)
+
         self.player = Player(460, 300)
         self.progress = Progress()
 
@@ -37,7 +39,7 @@ class Game:
 
         self.dialogue = Dialogue(self.font, self.small_font)
 
-        self.current_message = "Осмотрись в комнате. Подойди к предмету и нажми E или пробел."
+        self.current_message = "Комната. Осмотрись, затем выйди через дверь."
 
         self.movement = {
             "up": False,
@@ -140,7 +142,39 @@ class Game:
             self._start_phone_dialogue()
             return
 
+        if near_object.name == "room_exit":
+            self._change_level("metro")
+            return
+
+        if near_object.name == "metro_seat":
+            self._start_metro_sleep_dialogue()
+            return
+
         self.current_message = near_object.message
+
+    def _change_level(self, level_name):
+        self.current_level_name = level_name
+        self.level.load_level(level_name)
+
+        if level_name == "room":
+            self.player.rect.x = 460
+            self.player.rect.y = 300
+            self.current_message = "Комната. Осмотрись, затем выйди через дверь."
+
+        elif level_name == "metro":
+            self.player.rect.x = 460
+            self.player.rect.y = 430
+            self.current_message = "Метро. Вагон почти пустой. Найди место, чтобы сесть."
+
+        self._stop_movement()
+
+    def _stop_movement(self):
+        self.movement = {
+            "up": False,
+            "down": False,
+            "left": False,
+            "right": False,
+        }
 
     def _start_phone_dialogue(self):
         if self.progress.phone_answered:
@@ -177,11 +211,30 @@ class Game:
             ],
         )
 
+    def _start_metro_sleep_dialogue(self):
+        self.dialogue.start(
+            title="Метро",
+            lines=[
+                "Героиня садится у окна.",
+                "Станции сменяются одна за другой, но в вагоне становится всё тише.",
+                "Она закрывает глаза всего на минуту.",
+            ],
+            options=[
+                {
+                    "text": "Продолжить.",
+                    "connection": 0,
+                    "result": "Поезд проезжает конечную станцию. Двери не открываются.",
+                }
+            ],
+        )
+
     def _apply_dialogue_option(self, option):
         if option["connection"] > 0:
             self.progress.add_connection_point()
 
-        self.progress.mark_phone_answered()
+        if self.current_level_name == "room":
+            self.progress.mark_phone_answered()
+
         self.current_message = option["result"]
         self.dialogue.close()
 

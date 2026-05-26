@@ -12,30 +12,49 @@ from settings import (
     COLOR_PHONE,
     COLOR_DOOR,
     COLOR_WINDOW,
+    COLOR_METRO_FLOOR,
+    COLOR_METRO_WALL,
+    COLOR_METRO_SEAT,
+    COLOR_METRO_DOOR,
+    COLOR_METRO_SCREEN,
+    COLOR_METRO_RAIL,
 )
 
+
 class InteractableObject:
-    def __init__(self, name, rect, color, message):
+    def __init__(self, name, rect, color, message, blocks_movement=True):
         self.name = name
         self.rect = pygame.Rect(rect)
         self.color = color
         self.message = message
+        self.blocks_movement = blocks_movement
 
     def draw(self, screen):
         pygame.draw.rect(screen, self.color, self.rect)
 
 
 class Level:
-    def __init__(self):
+    def __init__(self, level_name):
+        self.level_name = level_name
+        self.floor_color = COLOR_FLOOR
+        self.wall_color = COLOR_WALL
         self.walls = []
         self.objects = []
-        self._create_room()
 
-    def _create_room(self):
-        self._create_walls()
-        self._create_objects()
+        self.load_level(level_name)
 
-    def _create_walls(self):
+    def load_level(self, level_name):
+        self.level_name = level_name
+        self.walls = []
+        self.objects = []
+
+        if level_name == "room":
+            self._create_room()
+
+        elif level_name == "metro":
+            self._create_metro()
+
+    def _create_base_walls(self, wall_color):
         thickness = TILE_SIZE
 
         self.walls = [
@@ -45,7 +64,12 @@ class Level:
             pygame.Rect(SCREEN_WIDTH - thickness, 0, thickness, GAME_HEIGHT),
         ]
 
-    def _create_objects(self):
+        self.wall_color = wall_color
+
+    def _create_room(self):
+        self.floor_color = COLOR_FLOOR
+        self._create_base_walls(COLOR_WALL)
+
         bed = InteractableObject(
             name="bed",
             rect=(80, 80, 220, 90),
@@ -60,6 +84,14 @@ class Level:
             message="Стол. Учебники лежат открытыми, но мысли всё равно где-то далеко.",
         )
 
+        window = InteractableObject(
+            name="window",
+            rect=(390, 40, 180, 35),
+            color=COLOR_WINDOW,
+            message="Окно. За ним вечерний город, но сегодня он кажется особенно далёким.",
+            blocks_movement=False,
+        )
+
         mirror = InteractableObject(
             name="mirror",
             rect=(90, 300, 90, 130),
@@ -72,20 +104,14 @@ class Level:
             rect=(420, 390, 50, 35),
             color=COLOR_PHONE,
             message="Телефон. На экране новое сообщение.",
+            blocks_movement=False,
         )
 
         door = InteractableObject(
-            name="door",
+            name="room_exit",
             rect=(850, 350, 70, 120),
             color=COLOR_DOOR,
-            message="Дверь. Через неё можно выйти из комнаты, но пока сцена не готова.",
-        )
-
-        window = InteractableObject(
-            name="window",
-            rect=(390, 40, 180, 35),
-            color=COLOR_WINDOW,
-            message="Окно. Утренне солнце слепит в лицо.",
+            message="Дверь. Пора выйти из комнаты.",
         )
 
         self.objects = [
@@ -97,6 +123,103 @@ class Level:
             door,
         ]
 
+    def _create_metro(self):
+        self.floor_color = COLOR_METRO_FLOOR
+        self._create_base_walls(COLOR_METRO_WALL)
+
+        left_window = InteractableObject(
+            name="metro_window",
+            rect=(90, 80, 210, 55),
+            color=COLOR_METRO_DOOR,
+            message="За окном темнота тоннеля. В отражении почти не видно лица.",
+            blocks_movement=False,
+        )
+
+        center_window = InteractableObject(
+            name="metro_window",
+            rect=(375, 80, 210, 55),
+            color=COLOR_METRO_DOOR,
+            message="Стекло дрожит от движения поезда.",
+            blocks_movement=False,
+        )
+
+        right_window = InteractableObject(
+            name="metro_window",
+            rect=(660, 80, 210, 55),
+            color=COLOR_METRO_DOOR,
+            message="За окном мелькают редкие огни.",
+            blocks_movement=False,
+        )
+
+        metro_screen = InteractableObject(
+            name="metro_screen",
+            rect=(360, 155, 240, 45),
+            color=COLOR_METRO_SCREEN,
+            message="Табло мигает: «Следующая станция — конечная».",
+            blocks_movement=False,
+        )
+
+        left_train_door = InteractableObject(
+            name="train_door",
+            rect=(45, 220, 70, 140),
+            color=COLOR_METRO_DOOR,
+            message="Двери закрыты. За ними только тёмный тоннель.",
+            blocks_movement=True,
+        )
+
+        right_train_door = InteractableObject(
+            name="train_door",
+            rect=(845, 220, 70, 140),
+            color=COLOR_METRO_DOOR,
+            message="Двери не открываются, хотя поезд уже должен был остановиться.",
+            blocks_movement=True,
+        )
+
+        left_seat = InteractableObject(
+            name="metro_seat",
+            rect=(140, 390, 260, 70),
+            color=COLOR_METRO_SEAT,
+            message="Сиденье. Вагон почти пустой. Глаза начинают закрываться.",
+            blocks_movement=True,
+        )
+
+        right_seat = InteractableObject(
+            name="metro_seat",
+            rect=(560, 390, 260, 70),
+            color=COLOR_METRO_SEAT,
+            message="Сиденье. Здесь тихо, будто поезд едет не по обычному маршруту.",
+            blocks_movement=True,
+        )
+
+        left_rail = InteractableObject(
+            name="rail",
+            rect=(430, 250, 14, 110),
+            color=COLOR_METRO_RAIL,
+            message="Поручень холодный на ощупь.",
+            blocks_movement=True,
+        )
+
+        right_rail = InteractableObject(
+            name="rail",
+            rect=(515, 250, 14, 110),
+            color=COLOR_METRO_RAIL,
+            message="Поручень холодный на ощупь.",
+            blocks_movement=True,
+        )
+
+        self.objects = [
+            left_window,
+            center_window,
+            right_window,
+            metro_screen,
+            left_train_door,
+            right_train_door,
+            left_seat,
+            right_seat,
+            left_rail,
+            right_rail,
+        ]
+
     def get_collision_rects(self):
         rects = []
 
@@ -104,7 +227,7 @@ class Level:
             rects.append(wall)
 
         for obj in self.objects:
-            if obj.name not in ("phone", "window"):
+            if obj.blocks_movement:
                 rects.append(obj.rect)
 
         return rects
@@ -119,11 +242,11 @@ class Level:
         return None
 
     def draw(self, screen):
-        room_rect = pygame.Rect(0, 0, SCREEN_WIDTH, GAME_HEIGHT)
-        pygame.draw.rect(screen, COLOR_FLOOR, room_rect)
+        game_area = pygame.Rect(0, 0, SCREEN_WIDTH, GAME_HEIGHT)
+        pygame.draw.rect(screen, self.floor_color, game_area)
 
         for wall in self.walls:
-            pygame.draw.rect(screen, COLOR_WALL, wall)
+            pygame.draw.rect(screen, self.wall_color, wall)
 
         for obj in self.objects:
             obj.draw(screen)
