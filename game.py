@@ -14,6 +14,8 @@ from settings import (
 
 from player import Player
 from level import Level
+from dialogue import Dialogue
+from progress import Progress
 
 
 class Game:
@@ -28,9 +30,12 @@ class Game:
 
         self.level = Level()
         self.player = Player(460, 300)
+        self.progress = Progress()
 
         self.font = pygame.font.SysFont("arial", 22)
         self.small_font = pygame.font.SysFont("arial", 18)
+
+        self.dialogue = Dialogue(self.font, self.small_font)
 
         self.current_message = "Осмотрись в комнате. Подойди к предмету и нажми E или пробел."
 
@@ -57,6 +62,14 @@ class Game:
                 self.running = False
 
             if event.type == pygame.KEYDOWN:
+                if self.dialogue.active:
+                    selected_option = self.dialogue.handle_key_down(event)
+
+                    if selected_option is not None:
+                        self._apply_dialogue_option(selected_option)
+
+                    continue
+
                 self._handle_key_down(event)
 
             if event.type == pygame.KEYUP:
@@ -69,11 +82,9 @@ class Game:
         if event.key in (pygame.K_SPACE, pygame.K_RETURN):
             self._interact()
 
-        # E на английской раскладке + физическая клавиша E
         if event.key == pygame.K_e or event.scancode == 8:
             self._interact()
 
-        # Стрелки
         if event.key == pygame.K_UP:
             self.movement["up"] = True
         if event.key == pygame.K_DOWN:
@@ -83,7 +94,6 @@ class Game:
         if event.key == pygame.K_RIGHT:
             self.movement["right"] = True
 
-        # WASD по физическим клавишам, работает даже на русской раскладке
         if event.scancode == 26:  # W
             self.movement["up"] = True
         if event.scancode == 22:  # S
@@ -113,6 +123,9 @@ class Game:
             self.movement["right"] = False
 
     def _update(self):
+        if self.dialogue.active:
+            return
+
         collision_rects = self.level.get_collision_rects()
         self.player.handle_movement(self.movement, collision_rects)
 
@@ -123,7 +136,54 @@ class Game:
             self.current_message = "Рядом нет ничего, с чем можно взаимодействовать."
             return
 
+        if near_object.name == "phone":
+            self._start_phone_dialogue()
+            return
+
         self.current_message = near_object.message
+
+    def _start_phone_dialogue(self):
+        if self.progress.phone_answered:
+            self.current_message = "Телефон. Сообщение уже прочитано."
+            return
+
+        self.dialogue.start(
+            title="Телефон",
+            lines=[
+                "На экране сообщение от одноклассницы:",
+                "«Ты сегодня быстро ушла. Всё нормально?»",
+            ],
+            options=[
+                {
+                    "text": "Да, всё нормально.",
+                    "connection": 0,
+                    "result": "Она быстро печатает ответ и убирает телефон.",
+                },
+                {
+                    "text": "Не знаю.",
+                    "connection": 1,
+                    "result": "Она отвечает честнее, чем собиралась. Это маленький, но важный шаг.",
+                },
+                {
+                    "text": "Просто устала.",
+                    "connection": 1,
+                    "result": "Она не пишет всего, что чувствует, но хотя бы не прячет это полностью.",
+                },
+                {
+                    "text": "Не отвечать.",
+                    "connection": 0,
+                    "result": "Экран гаснет. В комнате снова становится тихо.",
+                },
+            ],
+        )
+
+    def _apply_dialogue_option(self, option):
+        if option["connection"] > 0:
+            self.progress.add_connection_point()
+
+        self.progress.mark_phone_answered()
+        self.current_message = option["result"]
+        self.dialogue.close()
 
     def _draw(self):
         self.screen.fill(COLOR_BACKGROUND)
@@ -132,6 +192,7 @@ class Game:
         self.player.draw(self.screen)
 
         self._draw_ui()
+        self.dialogue.draw(self.screen)
 
         pygame.display.flip()
 
@@ -149,3 +210,10 @@ class Game:
             COLOR_HINT,
         )
         self.screen.blit(hint_surface, (30, GAME_HEIGHT + 75))
+
+        points_surface = self.small_font.render(
+            f"connection_points: {self.progress.connection_points}",
+            True,
+            COLOR_HINT,
+        )
+        self.screen.blit(points_surface, (SCREEN_WIDTH - 220, GAME_HEIGHT + 75))
