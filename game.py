@@ -17,8 +17,7 @@ from player import Player
 from level import Level
 from dialogue import Dialogue
 from progress import Progress
-from puzzle import FindObjectPuzzle
-
+from puzzle import FindObjectPuzzle, SequencePuzzle
 
 class Game:
     def __init__(self):
@@ -42,6 +41,7 @@ class Game:
 
         self.dialogue = Dialogue(self.font, self.small_font)
         self.find_ticket_puzzle = FindObjectPuzzle(self.font, self.small_font)
+        self.sequence_puzzle = SequencePuzzle(self.font, self.small_font)
 
         self.current_message = "Комната. Осмотрись, затем выйди через дверь."
 
@@ -73,6 +73,15 @@ class Game:
 
                     if result is not None:
                         self._handle_ticket_puzzle_result(result)
+
+                continue
+
+            if self.sequence_puzzle.active:
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    result = self.sequence_puzzle.handle_mouse_down(event.pos)
+
+                    if result is not None:
+                        self._handle_sequence_puzzle_result(result)
 
                 continue
 
@@ -141,9 +150,8 @@ class Game:
             self.movement["right"] = False
 
     def _update(self):
-        if self.dialogue.active or self.find_ticket_puzzle.active:
+        if self.dialogue.active or self.find_ticket_puzzle.active or self.sequence_puzzle.active:
             return
-
         collision_rects = self.level.get_collision_rects()
         self.player.handle_movement(self.movement, collision_rects)
 

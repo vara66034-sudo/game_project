@@ -25,6 +25,12 @@ from settings import (
     COLOR_OTHER_SIGN,
     COLOR_CONDUCTOR,
     COLOR_STRANGE_LIGHT,
+    COLOR_SCHOOL_FLOOR,
+    COLOR_SCHOOL_WALL,
+    COLOR_SCHOOL_DESK,
+    COLOR_SCHOOL_BOARD,
+    COLOR_SCHOOL_DOOR,
+    COLOR_SYMBOL_PANEL,
 )
 
 
@@ -61,6 +67,8 @@ class Level:
             self._create_metro()
         elif level_name == "other_station":
             self._create_other_station(progress)
+        elif level_name == "distorted_school":
+            self._create_distorted_school(progress)
 
     def _create_base_walls(self, wall_color):
         thickness = TILE_SIZE
@@ -284,7 +292,88 @@ class Level:
 
         if progress is None or not progress.ticket_found:
             self.objects.append(closed_gate)
-            
+        else:
+            passage = InteractableObject(
+                name="school_passage",
+                rect=(410, 430, 140, 60),
+                color=COLOR_OTHER_DOOR,
+                message="Проход открыт. За ним виден школьный коридор, которого здесь быть не должно.",
+                blocks_movement=True,
+            )
+            self.objects.append(passage)
+
+    def _create_distorted_school(self, progress=None):
+        self.floor_color = COLOR_SCHOOL_FLOOR
+        self._create_base_walls(COLOR_SCHOOL_WALL)
+
+        board = InteractableObject(
+            name="school_board",
+            rect=(310, 70, 340, 70),
+            color=COLOR_SCHOOL_BOARD,
+            message="На доске написано: «Сначала то, что имеет углы. Потом то, что не имеет. Потом то, что указывает вверх».",
+            blocks_movement=True,
+        )
+
+        left_desk = InteractableObject(
+            name="school_desk",
+            rect=(120, 230, 180, 70),
+            color=COLOR_SCHOOL_DESK,
+            message="Парта. На ней выцарапаны слова: «не отвечай слишком быстро».",
+            blocks_movement=True,
+        )
+
+        right_desk = InteractableObject(
+            name="school_desk",
+            rect=(660, 230, 180, 70),
+            color=COLOR_SCHOOL_DESK,
+            message="Парта. Здесь лежат чужие тетради без имён.",
+            blocks_movement=True,
+        )
+
+        back_desk = InteractableObject(
+            name="school_desk",
+            rect=(390, 340, 180, 70),
+            color=COLOR_SCHOOL_DESK,
+            message="Парта. Кажется, она стоит не там, где должна.",
+            blocks_movement=True,
+        )
+
+        symbol_panel = InteractableObject(
+            name="symbol_panel",
+            rect=(410, 170, 140, 45),
+            color=COLOR_SYMBOL_PANEL,
+            message="Панель с символами. На ней мерцают квадрат, круг и треугольник.",
+            blocks_movement=False,
+        )
+
+        symbol_door = InteractableObject(
+            name="symbol_door",
+            rect=(420, 430, 120, 60),
+            color=COLOR_SCHOOL_DOOR,
+            message="Дверь закрыта. Рядом светятся три символа.",
+            blocks_movement=True,
+        )
+
+        self.objects = [
+            board,
+            left_desk,
+            right_desk,
+            back_desk,
+            symbol_panel,
+        ]
+
+        if progress is None or not progress.symbol_puzzle_solved:
+            self.objects.append(symbol_door)
+        else:
+            opened_door = InteractableObject(
+                name="opened_symbol_door",
+                rect=(420, 430, 120, 60),
+                color=COLOR_SCHOOL_DOOR,
+                message="Дверь открыта. За ней пока пустой коридор — следующая сцена ещё не готова.",
+                blocks_movement=False,
+            )
+            self.objects.append(opened_door)
+
     def get_collision_rects(self):
         rects = []
 
@@ -315,3 +404,5 @@ class Level:
 
         for obj in self.objects:
             obj.draw(screen)
+
+    
