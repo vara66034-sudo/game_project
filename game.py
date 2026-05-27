@@ -218,6 +218,11 @@ class Game:
             self.player.rect.y = 360
             self.current_message = "Станция без названия. Здесь слишком тихо."
 
+        elif level_name == "distorted_school":
+            self.player.rect.x = 460
+            self.player.rect.y = 270
+            self.current_message = "Искажённая школа. Всё здесь похоже на реальность, но стоит неправильно."
+
         self._stop_movement()
 
     def _reload_current_level(self):
@@ -382,6 +387,14 @@ class Game:
             self.progress.add_connection_point()
             self._reload_current_level()
 
+    def _handle_sequence_puzzle_result(self, result):
+        self.current_message = result["message"]
+
+        if result["solved"]:
+            self.progress.mark_symbol_puzzle_solved()
+            self.progress.add_connection_point()
+            self._reload_current_level()
+
     def _draw(self):
         self.screen.fill(COLOR_BACKGROUND)
 
@@ -390,6 +403,8 @@ class Game:
 
         if self.find_ticket_puzzle.active:
             self.find_ticket_puzzle.draw(self.screen)
+        elif self.sequence_puzzle.active:
+            self.sequence_puzzle.draw(self.screen)
         elif self.dialogue.active:
             self.dialogue.draw(self.screen)
         else:
@@ -418,6 +433,7 @@ class Game:
                 f"DEBUG: level={self.current_level_name} | "
                 f"connection_points={self.progress.connection_points} | "
                 f"ticket_found={self.progress.ticket_found} | "
+                f"symbols_solved={self.progress.symbol_puzzle_solved} | "
                 f"F3 hide debug"
             )
 
