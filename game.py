@@ -17,6 +17,7 @@ from player import Player
 from level import Level
 from dialogue import Dialogue
 from progress import Progress
+from puzzle import FindObjectPuzzle
 
 
 class Game:
@@ -31,15 +32,16 @@ class Game:
         self.show_debug = DEBUG_UI
 
         self.current_level_name = "room"
+        self.progress = Progress()
         self.level = Level(self.current_level_name)
 
         self.player = Player(460, 300)
-        self.progress = Progress()
 
         self.font = pygame.font.SysFont("arial", 22)
         self.small_font = pygame.font.SysFont("arial", 18)
 
         self.dialogue = Dialogue(self.font, self.small_font)
+        self.find_ticket_puzzle = FindObjectPuzzle(self.font, self.small_font)
 
         self.current_message = "Комната. Осмотрись, затем выйди через дверь."
 
@@ -64,6 +66,15 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+
+            if self.find_ticket_puzzle.active:
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    result = self.find_ticket_puzzle.handle_mouse_down(event.pos)
+
+                    if result is not None:
+                        self._handle_ticket_puzzle_result(result)
+
+                continue
 
             if event.type == pygame.KEYDOWN:
                 if self.dialogue.active:
@@ -130,7 +141,7 @@ class Game:
             self.movement["right"] = False
 
     def _update(self):
-        if self.dialogue.active:
+        if self.dialogue.active or self.find_ticket_puzzle.active:
             return
 
         collision_rects = self.level.get_collision_rects()
@@ -159,11 +170,18 @@ class Game:
             self._start_conductor_dialogue()
             return
 
+        if near_object.name == "closed_gate":
+            if self.progress.ticket_found:
+                self.current_message = "Проход открыт. Можно идти дальше."
+            else:
+                self.current_message = "Проход закрыт. Проводник ждёт, когда ты найдёшь билет."
+            return
+
         self.current_message = near_object.message
 
     def _change_level(self, level_name):
         self.current_level_name = level_name
-        self.level.load_level(level_name)
+        self.level.load_level(level_name, self.progress)
 
         if level_name == "room":
             self.player.rect.x = 460
@@ -181,6 +199,9 @@ class Game:
             self.current_message = "Станция без названия. Здесь слишком тихо."
 
         self._stop_movement()
+
+    def _reload_current_level(self):
+        self.level.load_level(self.current_level_name, self.progress)
 
     def _stop_movement(self):
         self.movement = {
@@ -244,28 +265,72 @@ class Game:
         )
 
     def _start_conductor_dialogue(self):
+        if self.progress.ticket_found:
+            self.dialogue.start(
+                title="Проводник",
+                lines=[
+                    "— Билет нашёлся.",
+                    "— Значит, станция признала тебя пассажиром.",
+                    "— Проход дальше открыт.",
+                ],
+                options=[
+                    {
+                        "text": "Продолжить.",
+                        "connection": 0,
+                        "result": "Проводник отступает в сторону. Проход больше не закрыт.",
+                    }
+                ],
+            )
+            return
+
+        if self.progress.conductor_task_started:
+            self.dialogue.start(
+                title="Проводник",
+                lines=[
+                    "— Билет всё ещё где-то здесь.",
+                    "— Иногда нужные вещи лежат среди почти одинаковых.",
+                ],
+                options=[
+                    {
+                        "text": "Искать билет.",
+                        "connection": 0,
+                        "result": "Героиня внимательно смотрит на разбросанные бумажки.",
+                        "action": "start_ticket_puzzle",
+                    },
+                    {
+                        "text": "Пока не сейчас.",
+                        "connection": 0,
+                        "result": "Проводник кивает. Станция всё равно ждёт.",
+                    },
+                ],
+            )
+            return
+
         self.dialogue.start(
             title="Проводник",
             lines=[
                 "— Ты проехала дальше конечной.",
                 "— Обычно сюда не попадают случайно.",
                 "— Но если станция открылась, значит, тебе нужно что-то здесь увидеть.",
+                "— Найди потерянный билет. Без него проход не откроется.",
             ],
             options=[
                 {
-                    "text": "Где я?",
-                    "connection": 0,
-                    "result": "Проводник смотрит на табло: «Там, где остановка появляется только для тех, кто потерял дорогу».",
-                },
-                {
-                    "text": "Я хочу домой.",
-                    "connection": 0,
-                    "result": "Проводник отвечает: «Домой можно вернуться. Но не раньше, чем ты поймёшь, зачем приехала».",
-                },
-                {
-                    "text": "Почему вы со мной разговариваете?",
+                    "text": "Я попробую найти его.",
                     "connection": 1,
-                    "result": "Проводник тихо говорит: «Потому что ты привыкла думать, что тебя никто не слышит».",
+                    "result": "Проводник кивает. На полу появляются похожие бумажки.",
+                    "action": "start_ticket_puzzle",
+                },
+                {
+                    "text": "Почему именно я?",
+                    "connection": 1,
+                    "result": "Проводник отвечает: «Потому что ты привыкла думать, что ничего не можешь изменить».",
+                    "action": "start_ticket_puzzle",
+                },
+                {
+                    "text": "Я не хочу.",
+                    "connection": 0,
+                    "result": "Проводник спокойно отвечает: «Тогда станция подождёт».",
                 },
             ],
         )
@@ -285,13 +350,27 @@ class Game:
         if action == "go_other_station":
             self._change_level("other_station")
 
+        elif action == "start_ticket_puzzle":
+            self.progress.start_conductor_task()
+            self.find_ticket_puzzle.start()
+
+    def _handle_ticket_puzzle_result(self, result):
+        self.current_message = result["message"]
+
+        if result["solved"]:
+            self.progress.mark_ticket_found()
+            self.progress.add_connection_point()
+            self._reload_current_level()
+
     def _draw(self):
         self.screen.fill(COLOR_BACKGROUND)
 
         self.level.draw(self.screen)
         self.player.draw(self.screen)
 
-        if self.dialogue.active:
+        if self.find_ticket_puzzle.active:
+            self.find_ticket_puzzle.draw(self.screen)
+        elif self.dialogue.active:
             self.dialogue.draw(self.screen)
         else:
             self._draw_ui()
@@ -318,6 +397,7 @@ class Game:
             debug_text = (
                 f"DEBUG: level={self.current_level_name} | "
                 f"connection_points={self.progress.connection_points} | "
+                f"ticket_found={self.progress.ticket_found} | "
                 f"F3 hide debug"
             )
 

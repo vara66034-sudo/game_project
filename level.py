@@ -50,7 +50,7 @@ class Level:
 
         self.load_level(level_name)
 
-    def load_level(self, level_name):
+    def load_level(self, level_name, progress=None):
         self.level_name = level_name
         self.walls = []
         self.objects = []
@@ -60,7 +60,7 @@ class Level:
         elif level_name == "metro":
             self._create_metro()
         elif level_name == "other_station":
-            self._create_other_station()
+            self._create_other_station(progress)
 
     def _create_base_walls(self, wall_color):
         thickness = TILE_SIZE
@@ -222,7 +222,7 @@ class Level:
             right_rail,
         ]
 
-    def _create_other_station(self):
+    def _create_other_station(self, progress=None):
         self.floor_color = COLOR_OTHER_FLOOR
         self._create_base_walls(COLOR_OTHER_WALL)
 
@@ -279,10 +279,12 @@ class Level:
             sign,
             strange_light_left,
             strange_light_right,
-            closed_gate,
             conductor,
         ]
 
+        if progress is None or not progress.ticket_found:
+            self.objects.append(closed_gate)
+            
     def get_collision_rects(self):
         rects = []
 
