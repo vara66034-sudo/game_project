@@ -177,6 +177,18 @@ class Game:
         if near_object.name == "conductor":
             self._start_conductor_dialogue()
             return
+        
+        if near_object.name == "school_passage":
+            self._change_level("distorted_school")
+            return
+
+        if near_object.name == "symbol_door":
+            self.sequence_puzzle.start()
+            return
+
+        if near_object.name == "opened_symbol_door":
+            self.current_message = "Дальше будет финальная сцена, но пока она ещё не добавлена."
+            return
 
         if near_object.name == "closed_gate":
             if self.progress.ticket_found:
