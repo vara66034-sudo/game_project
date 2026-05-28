@@ -18,6 +18,7 @@ from level import Level
 from dialogue import Dialogue
 from progress import Progress
 from puzzle import FindObjectPuzzle, SequencePuzzle
+from menu import MainMenu
 
 class Game:
     def __init__(self):
@@ -29,6 +30,7 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
         self.show_debug = DEBUG_UI
+        self.game_state = "menu"
 
         self.current_level_name = "room"
         self.progress = Progress()
@@ -42,6 +44,7 @@ class Game:
         self.dialogue = Dialogue(self.font, self.small_font)
         self.find_ticket_puzzle = FindObjectPuzzle(self.font, self.small_font)
         self.sequence_puzzle = SequencePuzzle(self.font, self.small_font)
+        self.menu = MainMenu(self.font, self.small_font)
 
         self.current_message = "Комната. Осмотрись, затем выйди через дверь."
 
@@ -66,6 +69,15 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+
+            if self.game_state == "menu":
+                if event.type == pygame.KEYDOWN:
+                    action = self.menu.handle_key_down(event)
+
+                    if action is not None:
+                        self._handle_menu_action(action)
+
+                continue
 
             if self.find_ticket_puzzle.active:
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -99,9 +111,37 @@ class Game:
             if event.type == pygame.KEYUP:
                 self._handle_key_up(event)
 
+    def _handle_menu_action(self, action):
+        if action == "new_game":
+            self._start_new_game()
+
+        elif action == "continue_game":
+            self.menu.set_message("Сохранение пока не добавлено.")
+
+        elif action == "exit":
+            self.running = False
+
+    def _start_new_game(self):
+        self.current_level_name = "room"
+        self.progress = Progress()
+        self.level = Level(self.current_level_name)
+        self.player = Player(460, 300)
+
+        self.dialogue.close()
+        self.find_ticket_puzzle.active = False
+        self.sequence_puzzle.active = False
+
+        self.current_message = "Комната. Осмотрись, затем выйди через дверь."
+
+        self._stop_movement()
+
+        self.menu.set_message("")
+        self.game_state = "playing"
+
     def _handle_key_down(self, event):
         if event.key == pygame.K_ESCAPE:
-            self.running = False
+            self.game_state = "menu"
+            self._stop_movement()
 
         if event.key == pygame.K_F3:
             self.show_debug = not self.show_debug
@@ -150,6 +190,9 @@ class Game:
             self.movement["right"] = False
 
     def _update(self):
+        if self.game_state == "menu":
+            return
+
         if self.dialogue.active or self.find_ticket_puzzle.active or self.sequence_puzzle.active:
             return
         collision_rects = self.level.get_collision_rects()
@@ -496,6 +539,11 @@ class Game:
     def _draw(self):
         self.screen.fill(COLOR_BACKGROUND)
 
+        if self.game_state == "menu":
+            self.menu.draw(self.screen)
+            pygame.display.flip()
+            return
+
         self.level.draw(self.screen)
         self.player.draw(self.screen)
 
@@ -509,7 +557,7 @@ class Game:
             self._draw_ui()
 
         pygame.display.flip()
-
+        
     def _draw_ui(self):
         box_rect = pygame.Rect(0, GAME_HEIGHT, SCREEN_WIDTH, UI_HEIGHT)
 
