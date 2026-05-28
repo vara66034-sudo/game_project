@@ -1,0 +1,15 @@
+{
+    "level_name": "other_station",
+    "player": {
+        "x": 460,
+        "y": 360
+    },
+    "progress": {
+        "connection_points": 1,
+        "phone_answered": true,
+        "ticket_found": false,
+        "conductor_task_started": false,
+        "symbol_puzzle_solved": false,
+        "ending_shown": false
+    }
+}

@@ -19,6 +19,7 @@ from dialogue import Dialogue
 from progress import Progress
 from puzzle import FindObjectPuzzle, SequencePuzzle
 from menu import MainMenu
+from save import SaveManager
 
 class Game:
     def __init__(self):
@@ -45,6 +46,7 @@ class Game:
         self.find_ticket_puzzle = FindObjectPuzzle(self.font, self.small_font)
         self.sequence_puzzle = SequencePuzzle(self.font, self.small_font)
         self.menu = MainMenu(self.font, self.small_font)
+        self.save_manager = SaveManager()
 
         self.current_message = "Комната. Осмотрись, затем выйди через дверь."
 
@@ -113,10 +115,11 @@ class Game:
 
     def _handle_menu_action(self, action):
         if action == "new_game":
+            self.save_manager.delete_save()
             self._start_new_game()
 
         elif action == "continue_game":
-            self.menu.set_message("Сохранение пока не добавлено.")
+            self._continue_game()
 
         elif action == "exit":
             self.running = False
@@ -137,6 +140,55 @@ class Game:
 
         self.menu.set_message("")
         self.game_state = "playing"
+
+    def _continue_game(self):
+        save_data = self.save_manager.load_game()
+
+        if save_data is None:
+            self.menu.set_message("Сохранение не найдено.")
+            return
+
+        self._load_from_save(save_data)
+        self.menu.set_message("")
+        self.game_state = "playing"
+
+    def _save_current_game(self):
+        if self.game_state != "playing":
+            return
+
+        self.save_manager.save_game(
+            level_name=self.current_level_name,
+            player_rect=self.player.rect,
+            progress=self.progress,
+        )
+
+    def _load_from_save(self, save_data):
+        progress_data = save_data["progress"]
+
+        self.current_level_name = save_data["level_name"]
+        self.progress = Progress()
+
+        self.progress.connection_points = progress_data["connection_points"]
+        self.progress.phone_answered = progress_data["phone_answered"]
+        self.progress.ticket_found = progress_data["ticket_found"]
+        self.progress.conductor_task_started = progress_data["conductor_task_started"]
+        self.progress.symbol_puzzle_solved = progress_data["symbol_puzzle_solved"]
+        self.progress.ending_shown = progress_data["ending_shown"]
+
+        self.level = Level(self.current_level_name)
+        self.level.load_level(self.current_level_name, self.progress)
+
+        self.player = Player(
+            save_data["player"]["x"],
+            save_data["player"]["y"],
+        )
+
+        self.dialogue.close()
+        self.find_ticket_puzzle.active = False
+        self.sequence_puzzle.active = False
+
+        self.current_message = "Игра загружена."
+        self._stop_movement()
 
     def _handle_key_down(self, event):
         if event.key == pygame.K_ESCAPE:
@@ -284,6 +336,7 @@ class Game:
             self.current_message = "Финальная станция. Проводник ждёт ответа."
 
         self._stop_movement()
+        self._save_current_game()
 
     def _reload_current_level(self):
         self.level.load_level(self.current_level_name, self.progress)
@@ -520,6 +573,9 @@ class Game:
         elif action == "quit_game":
             self.running = False
 
+        if action != "quit_game":
+            self._save_current_game()
+
     def _handle_ticket_puzzle_result(self, result):
         self.current_message = result["message"]
 
@@ -527,6 +583,7 @@ class Game:
             self.progress.mark_ticket_found()
             self.progress.add_connection_point()
             self._reload_current_level()
+            self._save_current_game()
 
     def _handle_sequence_puzzle_result(self, result):
         self.current_message = result["message"]
@@ -535,6 +592,7 @@ class Game:
             self.progress.mark_symbol_puzzle_solved()
             self.progress.add_connection_point()
             self._reload_current_level()
+            self._save_current_game()
 
     def _draw(self):
         self.screen.fill(COLOR_BACKGROUND)
@@ -557,7 +615,7 @@ class Game:
             self._draw_ui()
 
         pygame.display.flip()
-        
+
     def _draw_ui(self):
         box_rect = pygame.Rect(0, GAME_HEIGHT, SCREEN_WIDTH, UI_HEIGHT)
 
