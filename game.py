@@ -187,9 +187,21 @@ class Game:
             return
 
         if near_object.name == "opened_symbol_door":
-            self.current_message = "Дальше будет финальная сцена, но пока она ещё не добавлена."
+            self._change_level("final_station")
             return
 
+        if near_object.name == "final_conductor":
+            self._start_final_dialogue()
+            return
+
+        if near_object.name == "return_gate":
+            self._show_good_ending()
+            return
+
+        if near_object.name == "stay_gate":
+            self._show_sad_ending()
+            return
+        
         if near_object.name == "closed_gate":
             if self.progress.ticket_found:
                 self.current_message = "Проход открыт. Можно идти дальше."
@@ -222,6 +234,11 @@ class Game:
             self.player.rect.x = 460
             self.player.rect.y = 270
             self.current_message = "Искажённая школа. Всё здесь похоже на реальность, но стоит неправильно."
+
+        elif level_name == "final_station":
+            self.player.rect.x = 460
+            self.player.rect.y = 360
+            self.current_message = "Финальная станция. Проводник ждёт ответа."
 
         self._stop_movement()
 
@@ -360,6 +377,84 @@ class Game:
             ],
         )
 
+    def _start_final_dialogue(self):
+        if self.progress.connection_points >= 2:
+            self.dialogue.start(
+                title="Проводник",
+                lines=[
+                    "— Ты можешь остаться здесь.",
+                    "— Здесь тебя слышали. Здесь ты помогала.",
+                    "— Но это не значит, что в твоём мире ты ничего не значишь.",
+                ],
+                options=[
+                    {
+                        "text": "Я попробую вернуться.",
+                        "connection": 0,
+                        "result": "Проводник кивает. Вдалеке открывается проход назад.",
+                    }
+                ],
+            )
+        else:
+            self.dialogue.start(
+                title="Проводник",
+                lines=[
+                    "— Ты можешь остаться здесь.",
+                    "— Но станция не станет домом только потому, что в реальности больно.",
+                    "— Иногда путь назад труднее, чем путь сюда.",
+                ],
+                options=[
+                    {
+                        "text": "Я не знаю, куда мне идти.",
+                        "connection": 0,
+                        "result": "Проводник молчит. Оба прохода остаются открытыми.",
+                    }
+                ],
+            )
+
+    def _show_good_ending(self):
+        if self.progress.connection_points < 2:
+            self.current_message = "Героиня подходит к проходу назад, но останавливается. Ей всё ещё страшно."
+            return
+
+        self.progress.mark_ending_shown()
+        self.dialogue.start(
+            title="Хорошая концовка",
+            lines=[
+                "Героиня выходит из метро на своей станции.",
+                "Телефон снова загорается сообщением.",
+                "В этот раз она не прячет ответ за коротким «нормально».",
+                "Она пишет: «Я не совсем в порядке. Можно я расскажу?»",
+            ],
+            options=[
+                {
+                    "text": "Завершить игру.",
+                    "connection": 0,
+                    "result": "Конец. Героиня сделала первый шаг обратно к людям.",
+                    "action": "quit_game",
+                }
+            ],
+        )
+
+    def _show_sad_ending(self):
+        self.progress.mark_ending_shown()
+        self.dialogue.start(
+            title="Грустная концовка",
+            lines=[
+                "Героиня остаётся на станции без названия.",
+                "Сначала огни кажутся тёплыми.",
+                "Потом голоса становятся тише.",
+                "На табло появляется надпись: «Следующая — нигде».",
+            ],
+            options=[
+                {
+                    "text": "Завершить игру.",
+                    "connection": 0,
+                    "result": "Конец. Станция остаётся ждать следующего пассажира.",
+                    "action": "quit_game",
+                }
+            ],
+        )
+
     def _apply_dialogue_option(self, option):
         if option.get("connection", 0) > 0:
             self.progress.add_connection_point()
@@ -378,6 +473,9 @@ class Game:
         elif action == "start_ticket_puzzle":
             self.progress.start_conductor_task()
             self.find_ticket_puzzle.start()
+        
+        elif action == "quit_game":
+            self.running = False
 
     def _handle_ticket_puzzle_result(self, result):
         self.current_message = result["message"]

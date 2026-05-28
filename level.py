@@ -31,6 +31,11 @@ from settings import (
     COLOR_SCHOOL_BOARD,
     COLOR_SCHOOL_DOOR,
     COLOR_SYMBOL_PANEL,
+    COLOR_FINAL_FLOOR,
+    COLOR_FINAL_WALL,
+    COLOR_FINAL_PLATFORM,
+    COLOR_FINAL_SIGN,
+    COLOR_FINAL_GATE,
 )
 
 
@@ -69,7 +74,9 @@ class Level:
             self._create_other_station(progress)
         elif level_name == "distorted_school":
             self._create_distorted_school(progress)
-
+        elif level_name == "final_station":
+            self._create_final_station()
+            
     def _create_base_walls(self, wall_color):
         thickness = TILE_SIZE
 
@@ -369,10 +376,62 @@ class Level:
                 name="opened_symbol_door",
                 rect=(420, 430, 120, 60),
                 color=COLOR_SCHOOL_DOOR,
-                message="Дверь открыта. За ней пока пустой коридор — следующая сцена ещё не готова.",
+                message="Дверь открыта. За ней снова видна станция.",
                 blocks_movement=False,
             )
             self.objects.append(opened_door)
+
+    def _create_final_station(self):
+        self.floor_color = COLOR_FINAL_FLOOR
+        self._create_base_walls(COLOR_FINAL_WALL)
+
+        platform = InteractableObject(
+            name="final_platform",
+            rect=(90, 330, 780, 90),
+            color=COLOR_FINAL_PLATFORM,
+            message="Платформа стала тише. Кажется, станция ждёт ответа.",
+            blocks_movement=False,
+        )
+
+        sign = InteractableObject(
+            name="final_sign",
+            rect=(300, 80, 360, 55),
+            color=COLOR_FINAL_SIGN,
+            message="На табло дрожат слова: «Следующая станция зависит от тебя».",
+            blocks_movement=False,
+        )
+
+        conductor = InteractableObject(
+            name="final_conductor",
+            rect=(460, 220, 42, 58),
+            color=COLOR_CONDUCTOR,
+            message="Проводник ждёт у края платформы.",
+            blocks_movement=True,
+        )
+
+        return_gate = InteractableObject(
+            name="return_gate",
+            rect=(250, 430, 140, 60),
+            color=COLOR_FINAL_GATE,
+            message="Проход назад. Отсюда будто слышен шум обычного города.",
+            blocks_movement=True,
+        )
+
+        stay_gate = InteractableObject(
+            name="stay_gate",
+            rect=(570, 430, 140, 60),
+            color=COLOR_FINAL_GATE,
+            message="Проход дальше. За ним тихо светится станция без названия.",
+            blocks_movement=True,
+        )
+
+        self.objects = [
+            platform,
+            sign,
+            conductor,
+            return_gate,
+            stay_gate,
+        ]
 
     def get_collision_rects(self):
         rects = []

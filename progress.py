@@ -5,6 +5,7 @@ class Progress:
         self.ticket_found = False
         self.conductor_task_started = False
         self.symbol_puzzle_solved = False
+        self.ending_shown = False
 
     def add_connection_point(self):
         self.connection_points += 1
@@ -20,3 +21,6 @@ class Progress:
 
     def mark_symbol_puzzle_solved(self):
         self.symbol_puzzle_solved = True
+
+    def mark_ending_shown(self):
+        self.ending_shown = True
