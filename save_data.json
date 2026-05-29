@@ -1,14 +1,14 @@
 {
-    "level_name": "room",
+    "level_name": "distorted_school",
     "player": {
         "x": 460,
-        "y": 436
+        "y": 270
     },
     "progress": {
-        "connection_points": 0,
-        "phone_answered": true,
-        "ticket_found": false,
-        "conductor_task_started": false,
+        "connection_points": 2,
+        "phone_answered": false,
+        "ticket_found": true,
+        "conductor_task_started": true,
         "symbol_puzzle_solved": false,
         "ending_shown": false
     }
