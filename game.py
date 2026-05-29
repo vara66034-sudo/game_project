@@ -387,6 +387,7 @@ class Game:
                     "result": "Экран гаснет. В комнате снова становится тихо.",
                 },
             ],
+            portrait_path="assets/player/player_dialogue.png"
         )
 
     def _start_metro_sleep_dialogue(self):
@@ -423,6 +424,7 @@ class Game:
                         "result": "Проводник отступает в сторону. Проход больше не закрыт.",
                     }
                 ],
+                portrait_path="assets/conductor/conductor_dialogue.png",
             )
             return
 
@@ -446,6 +448,7 @@ class Game:
                         "result": "Проводник кивает. Станция всё равно ждёт.",
                     },
                 ],
+                portrait_path="assets/conductor/conductor_dialogue.png",
             )
             return
 
@@ -476,6 +479,7 @@ class Game:
                     "result": "Проводник спокойно отвечает: «Тогда станция подождёт».",
                 },
             ],
+            portrait_path="assets/conductor/conductor_dialogue.png",
         )
 
     def _start_final_dialogue(self):
@@ -494,6 +498,7 @@ class Game:
                         "result": "Проводник кивает. Вдалеке открывается проход назад.",
                     }
                 ],
+                portrait_path="assets/conductor/conductor_dialogue.png",
             )
         else:
             self.dialogue.start(
@@ -610,7 +615,7 @@ class Game:
         self.level.draw(self.screen)
         self._draw_npcs()
         self.player.draw(self.screen)
-        
+
         if self.find_ticket_puzzle.active:
             self.find_ticket_puzzle.draw(self.screen)
         elif self.sequence_puzzle.active:
