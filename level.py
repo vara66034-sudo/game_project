@@ -1,3 +1,4 @@
+import os
 import pygame
 
 from settings import (
@@ -58,6 +59,7 @@ class Level:
         self.wall_color = COLOR_WALL
         self.walls = []
         self.objects = []
+        self.background_image = None
 
         self.load_level(level_name)
 
@@ -65,6 +67,7 @@ class Level:
         self.level_name = level_name
         self.walls = []
         self.objects = []
+        self.background_image = None
 
         if level_name == "room":
             self._create_room()
@@ -89,9 +92,20 @@ class Level:
 
         self.wall_color = wall_color
 
+    def _load_background(self, path):
+        if os.path.exists(path):
+            image = pygame.image.load(path).convert_alpha()
+            self.background_image = pygame.transform.scale(
+                image,
+                (SCREEN_WIDTH, GAME_HEIGHT),
+            )
+        else:
+            self.background_image = None
+
     def _create_room(self):
         self.floor_color = COLOR_FLOOR
         self._create_base_walls(COLOR_WALL)
+        self._load_background("assets/locations/room.png")
 
         bed = InteractableObject(
             name="bed",
@@ -149,6 +163,7 @@ class Level:
     def _create_metro(self):
         self.floor_color = COLOR_METRO_FLOOR
         self._create_base_walls(COLOR_METRO_WALL)
+        self._load_background("assets/locations/metro.png")
 
         left_window = InteractableObject(
             name="metro_window",
@@ -240,6 +255,7 @@ class Level:
     def _create_other_station(self, progress=None):
         self.floor_color = COLOR_OTHER_FLOOR
         self._create_base_walls(COLOR_OTHER_WALL)
+        self._load_background("assets/locations/other_station.png")
 
         platform = InteractableObject(
             name="platform",
@@ -312,6 +328,7 @@ class Level:
     def _create_distorted_school(self, progress=None):
         self.floor_color = COLOR_SCHOOL_FLOOR
         self._create_base_walls(COLOR_SCHOOL_WALL)
+        self._load_background("assets/locations/distorted_school.png")
 
         board = InteractableObject(
             name="school_board",
@@ -384,6 +401,7 @@ class Level:
     def _create_final_station(self):
         self.floor_color = COLOR_FINAL_FLOOR
         self._create_base_walls(COLOR_FINAL_WALL)
+        self._load_background("assets/locations/final_station.png")
 
         platform = InteractableObject(
             name="final_platform",
@@ -463,14 +481,17 @@ class Level:
 
     def draw(self, screen):
         game_area = pygame.Rect(0, 0, SCREEN_WIDTH, GAME_HEIGHT)
-        pygame.draw.rect(screen, self.floor_color, game_area)
 
-        for wall in self.walls:
-            pygame.draw.rect(screen, self.wall_color, wall)
+        if self.background_image is not None:
+            screen.blit(self.background_image, (0, 0))
+        else:
+            pygame.draw.rect(screen, self.floor_color, game_area)
 
-        for obj in self.objects:
-            if obj.name in ("conductor", "final_conductor"):
-                continue
+            for wall in self.walls:
+                pygame.draw.rect(screen, self.wall_color, wall)
 
-            obj.draw(screen)
-    
+            for obj in self.objects:
+                if obj.name in ("conductor", "final_conductor"):
+                    continue
+
+                obj.draw(screen)    

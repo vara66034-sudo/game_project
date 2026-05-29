@@ -1,15 +1,15 @@
 {
-    "level_name": "other_station",
+    "level_name": "final_station",
     "player": {
-        "x": 432,
-        "y": 264
+        "x": 460,
+        "y": 360
     },
     "progress": {
-        "connection_points": 2,
-        "phone_answered": true,
+        "connection_points": 3,
+        "phone_answered": false,
         "ticket_found": true,
         "conductor_task_started": true,
-        "symbol_puzzle_solved": false,
+        "symbol_puzzle_solved": true,
         "ending_shown": false
     }
 }
