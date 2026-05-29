@@ -20,6 +20,7 @@ from progress import Progress
 from puzzle import FindObjectPuzzle, SequencePuzzle
 from menu import MainMenu
 from save import SaveManager
+from npc import StaticNPCSprite
 
 class Game:
     def __init__(self):
@@ -47,6 +48,10 @@ class Game:
         self.sequence_puzzle = SequencePuzzle(self.font, self.small_font)
         self.menu = MainMenu(self.font, self.small_font)
         self.save_manager = SaveManager()
+        self.conductor_sprite = StaticNPCSprite(
+            sprite_sheet_path="assets/conductor/conductor_sheet.png",
+            direction="down",
+        )
 
         self.current_message = "Комната. Осмотрись, затем выйди через дверь."
 
@@ -603,8 +608,9 @@ class Game:
             return
 
         self.level.draw(self.screen)
+        self._draw_npcs()
         self.player.draw(self.screen)
-
+        
         if self.find_ticket_puzzle.active:
             self.find_ticket_puzzle.draw(self.screen)
         elif self.sequence_puzzle.active:
@@ -615,6 +621,21 @@ class Game:
             self._draw_ui()
 
         pygame.display.flip()
+
+    def _draw_npcs(self):
+        if self.current_level_name == "other_station":
+            conductor = self.level.get_object_by_name("conductor")
+
+            if conductor is not None:
+                self.conductor_sprite.direction = "down"
+                self.conductor_sprite.draw(self.screen, conductor.rect)
+
+        elif self.current_level_name == "final_station":
+            conductor = self.level.get_object_by_name("final_conductor")
+
+            if conductor is not None:
+                self.conductor_sprite.direction = "down"
+                self.conductor_sprite.draw(self.screen, conductor.rect)
 
     def _draw_ui(self):
         box_rect = pygame.Rect(0, GAME_HEIGHT, SCREEN_WIDTH, UI_HEIGHT)

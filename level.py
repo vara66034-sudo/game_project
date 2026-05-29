@@ -453,6 +453,13 @@ class Level:
                 return obj
 
         return None
+    
+    def get_object_by_name(self, object_name):
+        for obj in self.objects:
+            if obj.name == object_name:
+                return obj
+
+        return None
 
     def draw(self, screen):
         game_area = pygame.Rect(0, 0, SCREEN_WIDTH, GAME_HEIGHT)
@@ -462,6 +469,8 @@ class Level:
             pygame.draw.rect(screen, self.wall_color, wall)
 
         for obj in self.objects:
-            obj.draw(screen)
+            if obj.name in ("conductor", "final_conductor"):
+                continue
 
+            obj.draw(screen)
     
